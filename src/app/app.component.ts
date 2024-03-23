@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import Chart from 'chart.js/auto';
 
 interface Employee {
     Id: string;
@@ -22,11 +23,12 @@ export class AppComponent {
   public employees: Employee[] = [];
   public employeeWorkingHours: Map<string, number> = new Map();
   public employeeWorkingHoursSorted: [string, number][] = [];
+  public chart: any;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
-    
+
     this.getEmployees();
 
     this.employees.forEach(entry => {
@@ -43,6 +45,8 @@ export class AppComponent {
     // U array stavlja kopiju od mape
     // Sortira array, i svaki element zaokruzuje na najblizi ceo broj koji je veci ili jednak tom broju.
     this.employeeWorkingHoursSorted = Array.from(this.employeeWorkingHours).sort((a, b) => b[1] - a[1]).map(item => [item[0], Math.ceil(item[1])]);
+
+    this.createChart();
   }
 
   calculateWorkingHours(start: string, end: string): number {
@@ -61,5 +65,72 @@ export class AppComponent {
         console.error(error);
       }
     );
+  }
+
+  createChart() {
+    const labels = this.employeeWorkingHoursSorted.map(employee => employee[0]); 
+    const data = this.employeeWorkingHoursSorted.map(employee => employee[1]); 
+  
+    this.chart = new Chart("MyChart", {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: [
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 205, 86)',
+            'rgb(75, 192, 192)',
+            'rgb(153, 102, 255)',
+
+            'rgb(255, 70, 132)',
+            'rgb(34, 162, 235)',
+            'rgb(255, 235, 86)',
+            'rgb(75, 172, 192)',
+            'rgb(153, 122, 255)'
+          ],
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        aspectRatio: 2.5,
+        plugins: {
+          title: {
+            display: true,
+            font: {
+              size: 24,
+              weight: 'bold',
+              family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+            },
+            padding: {
+              top: 10,
+              bottom: 30
+            }
+          },
+          legend: {  
+            display: true,
+            labels: {
+              font: {
+                size: 14,
+                family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.label || '';
+                let value = context.parsed || 0;
+                let dataset = context.dataset || {};
+                let total = dataset.data.reduce((acc, curr) => acc + curr, 0);
+                let percent = Math.round((value / total) * 100);
+                return `${label}: ${value} (${percent}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
   }
 }
